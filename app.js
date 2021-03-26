@@ -5,6 +5,7 @@ const express = require('express')
 const app = express()
 const cors = require('cors')
 const mongoose = require('mongoose')
+const path = require('path')
 const usersRouter = require('./controllers/users')
 const loginRouter = require('./controllers/login')
 const addRouters = require('./controllers/add')
@@ -27,7 +28,7 @@ mongoose
      logger.error('error connection to MongoDB: ', error.message)
    })
 
-app.use(express.static('build'))
+app.use(express.static(path.join(__dirname, 'build')))
 app.use(cors())
 app.use(express.json())
 app.use(middleware.requestLogger)
@@ -44,6 +45,9 @@ app.use('/api/bookmark', bookmarkRouter)
 app.use('/api/updatedraft', draftRouters.updateDraft)
 app.use('/api/publishdraft', draftRouters.publishDraft)
 app.use('/api', deleteRouter)
+app.get('/*', function (req, res) {
+  res.sendFile(path.join(__dirname, 'build', 'index.html'))
+})
 
 
 module.exports = app

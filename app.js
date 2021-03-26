@@ -16,6 +16,7 @@ const deleteRouter = require('./controllers/delete')
 
 
 logger.info('connecting to', config.MONGODB_URI)
+logger.info('connecting to', process.env.MONGODB_URI)
 
 mongoose
    .connect(config.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true})

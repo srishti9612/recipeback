@@ -44,5 +44,6 @@ app.use('/api/bookmark', bookmarkRouter)
 app.use('/api/updatedraft', draftRouters.updateDraft)
 app.use('/api/publishdraft', draftRouters.publishDraft)
 app.use('/api', deleteRouter)
+app.use('*', function (req, res, next) { res.sendFile('./build/index.html')})
 
 module.exports = app

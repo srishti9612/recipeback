@@ -6,6 +6,8 @@ const logger = require('./utils/logger')
 const server = http.createServer(app)
 console.log('inside index.js')
 
-server.listen(config.PORT, () => {
-  logger.info(`Server running on port ${config.PORT}`)
+const PORT = process.env.PORT || config.PORT
+
+server.listen(PORT, () => {
+  logger.info(`Server running on port ${PORT}`)
 })

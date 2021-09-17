@@ -1,11 +1,16 @@
-const retrieveRouter = require('express').Router()
+const recipeRouter = require('express').Router()
 const Recipe = require('../models/recipe')
 const User = require('../models/user')
-const Draft = require('../models/draft')
 const jwt = require('jsonwebtoken')
 const gToken = require('./getToken')
+const upload = require("../services/ImageUpload")
+const singleUpload = upload.single("photo")
 
-retrieveRouter.get('/all', async (request, response) => {
+//localhost:3002/api/recipe
+
+/* All Get Requests related to Recipes */
+
+recipeRouter.get('/all', async (request, response) => {
    let recipes = []
    /// apply a filter if the object is not null.
    /// you need to get a filter object here 
@@ -149,7 +154,7 @@ retrieveRouter.get('/all', async (request, response) => {
 })
 
 
-retrieveRouter.get('/urecipes', async (request, response) => {
+recipeRouter.get('/urecipes', async (request, response) => {
    let param = request.query
    let recipes = []
    
@@ -167,93 +172,7 @@ retrieveRouter.get('/urecipes', async (request, response) => {
 		})
 })
 
-retrieveRouter.get('/ubio', async (request, response) => {
-   // return bio of the user with given username
-
-   let param = request.query
-   
-   await User.find({ username: param.uname }, { bio: 1 })
-	     .exec((err, docs) => {
-	        if (err) {
-		  response.json(err)
-		} else {
-		  response.json(docs)
-		}
-	     })
-})
-
-retrieveRouter.get('/drafts', async (request, response) => {
-   const token = gToken.getTokenFrom(request)
-   const decodedToken = jwt.verify(token, process.env.SECRET)
-
-   if (!token || !decodedToken.id) {
-      return response.status(401).json({ error: 'token missing or invalid'})
-   }
-
-   const user = await User.findById(decodedToken.id)
-   const uid = user._id
-
-   console.log(uid)
-
-   Draft.find({ author: uid }, null, { sort: { date: 'desc'} }) 
-	.exec((err, drafts) => {
-           
-	   if (err) {
-             response.send(err)
-           }
-           
-           console.log(drafts)
-           response.json(drafts)
-        })
-})
-
-
-retrieveRouter.get('/bookmarks', async (request, response) => {
-   console.log("inside bookmarks retrieve router")
-   const token = gToken.getTokenFrom(request)
-   const decodedToken = jwt.verify(token, process.env.SECRET)
-
-   if (!token || !decodedToken.id) {
-      return response.status(401).json({ error: 'token missing or invalid'})
-   }
-   
-   const user = await User.findById(decodedToken.id)
-   const uname = user.username
-   const bookmarks = [...user.bookmarks]
-
-   console.log(bookmarks)
-
-   Recipe.find({ _id: { $in: [...bookmarks] } })
-	 .exec((err, bookmarks) => {
-	      
-	     if (err) {
-	         response.json(err)
-	      }
-
-	      response.json(bookmarks)
-	  })
-})
-
-retrieveRouter.get('/followingnames', async (request, response) => {
-  
-  console.log("inside following names router")
-
-  const token = gToken.getTokenFrom(request)
-  const decodedToken = jwt.verify(token, process.env.SECRET)
-
-  if (!token || !decodedToken.id) {
-      return response.status(401).json({ error: 'token missing or invalid'})
-  }
-
-  const user = await User.findById(decodedToken.id)
-
-  let followingNames = user.following
-
-  response.json(followingNames)
-
-})
-
-retrieveRouter.get('/followingrecipes', async (request, response) => {
+recipeRouter.get('/followingrecipes', async (request, response) => {
 
   console.log("inside following recipes router")
 
@@ -278,4 +197,117 @@ retrieveRouter.get('/followingrecipes', async (request, response) => {
 	})
 })
 
-module.exports = retrieveRouter
+
+/* All Post Requests related to Recipes */
+
+recipeRouter.post('/', singleUpload, async (request, response) => {
+    console.log("inside add router")
+    const body = request.body
+    console.log("body ")
+    console.log(body)
+    console.log("request.file.location")
+    //console.log(request.file.location)
+    const token = gToken.getTokenFrom(request)    
+    const decodedToken = jwt.verify(token, process.env.SECRET)
+ 
+    if (!token || !decodedToken.id) {
+         return response.status(401).json({ error: 'token missing or invalid'})
+    }
+ 
+    const user = await User.findById(decodedToken.id) 
+ 
+    console.log("request.file value")
+    console.log(request.file)
+ 
+    const recipe = new Recipe({
+         title: body.title,
+         ingredients: JSON.parse(body.ingredients),
+         method: body.method,
+         cuisine: body.cuisine,
+         meal: body.meal,
+         course: body.course,
+         author: user.username,
+         photo: (request.file) ? request.file.location : '',
+         date: new Date(),
+         rating: 0
+     })
+ 
+     recipe.save(function (err, recipe) {
+       if (err) {
+         console.log(err)
+     response.json({'err': err.message})
+       } else {
+     user.recipes.push(recipe._id)
+         const savedUser = user.save()
+     console.log(user.recipes)
+     console.log(user)
+     response.json(recipe)
+       }
+     
+     })
+ })
+ 
+
+/* All Put requests related to recipes */
+
+recipeRouter.put('/', singleUpload, async (request, response) => {
+
+    console.log("inside recipe edit router")
+    const body = request.body
+    const token = gToken.getTokenFrom(request)
+    const decodedToken = jwt.verify(token, process.env.SECRET)
+   
+    if (!token || !decodedToken.id) {
+       return response.status(401).json({ error: 'token missing or invalid'})
+    }
+
+    console.log("request.file value")
+    console.log(request.file)
+
+    let conditions = { _id: body._id }
+    let update = {
+        title: body.title,
+	    ingredients: JSON.parse(body.ingredients),
+	    method: body.method,
+	    cuisine: body.cuisine,
+	    meal: body.meal,
+	    course: body.course,
+	    photo: (request.file) ? request.file.location : body.photo,
+	    date: new Date()
+    }
+
+    let options = { multi: true }
+
+    Recipe.update(conditions, update, options, (err, doc) => {
+       if (err) return response.json(err)
+
+       response.json({ success: "updatedrecipe" })
+    })
+})
+
+/* All Delete requests related to recipes */
+
+recipeRouter.delete('/:id', async (request, response) => {
+    const token = gToken.getTokenFrom(request)
+    const decodedToken = jwt.verify(token, process.env.SECRET)
+
+    if (!token || !decodedToken.id) {
+       return response.status(401).json({ error: 'token missing or invalid'})
+    }
+
+    let mongoose = require('mongoose')
+    const recipeId = mongoose.Types.ObjectId(request.params.id)
+
+    await Recipe.deleteOne({ "_id": recipeId })
+	        .exec((err, obj) => {
+		   if (err) {
+		     console.log(err)
+		     response.json(err)
+		   } else {
+		      response.json("success")
+		   }
+		})
+})
+
+
+module.exports = recipeRouter

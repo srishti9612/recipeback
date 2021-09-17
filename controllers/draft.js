@@ -1,6 +1,4 @@
-const addDraftRouter = require('express').Router()
-const updateDraftRouter = require('express').Router()
-const publishDraftRouter = require('express').Router()
+const draftRouter = require('express').Router()
 const Draft = require('../models/draft')
 const User = require('../models/user')
 const Recipe = require('../models/recipe')
@@ -9,7 +7,38 @@ const gToken = require('./getToken')
 const upload = require("../services/ImageUpload")
 const singleUpload = upload.single("photo")
 
-publishDraftRouter.post('/', singleUpload, async (request, response) => {
+// localhost:3002/api/draft
+/* All Get requests related to drafts */
+
+draftRouter.get('/all', async (request, response) => {
+    const token = gToken.getTokenFrom(request)
+    const decodedToken = jwt.verify(token, process.env.SECRET)
+ 
+    if (!token || !decodedToken.id) {
+       return response.status(401).json({ error: 'token missing or invalid'})
+    }
+ 
+    const user = await User.findById(decodedToken.id)
+    const uid = user._id
+ 
+    console.log(uid)
+ 
+    Draft.find({ author: uid }, null, { sort: { date: 'desc'} }) 
+     .exec((err, drafts) => {
+            
+        if (err) {
+              response.send(err)
+            }
+            
+            console.log(drafts)
+            response.json(drafts)
+         })
+ })
+
+
+/* All Post requests related to drafts */
+
+draftRouter.post('/publishdraft', singleUpload, async (request, response) => {
     const body = request.body
     const token = gToken.getTokenFrom(request)
     const decodedToken = jwt.verify(token, process.env.SECRET)
@@ -51,7 +80,7 @@ publishDraftRouter.post('/', singleUpload, async (request, response) => {
 })
 
 
-addDraftRouter.post('/', singleUpload, async (request, response) => {
+draftRouter.post('/', singleUpload, async (request, response) => {
     console.log("inside draft router")
     const body = request.body
     const token = gToken.getTokenFrom(request)
@@ -92,8 +121,10 @@ addDraftRouter.post('/', singleUpload, async (request, response) => {
     })
 })
 
+/* All Put requests related to drafts */
 
-updateDraftRouter.post('/', singleUpload, async (request, response) => {
+// temporary change from post to put
+draftRouter.put('/', singleUpload, async (request, response) => {
       const body = request.body
       const token = gToken.getTokenFrom(request)
       const decodedToken = jwt.verify(token, process.env.SECRET)
@@ -125,7 +156,29 @@ updateDraftRouter.post('/', singleUpload, async (request, response) => {
 }) 
 
 
+/* All delete requests related to drafts */
 
-module.exports.addDraft = addDraftRouter
-module.exports.updateDraft = updateDraftRouter
-module.exports.publishDraft = publishDraftRouter
+draftRouter.delete('/:id', async (request, response) => {
+    const token = gToken.getTokenFrom(request)
+    const decodedToken = jwt.verify(token, process.env.SECRET)
+
+    if (!token || !decodedToken.id) {
+       return response.status(401).json({ error: 'token missing or invalid'})
+    }
+
+    let mongoose = require('mongoose')
+    
+    const draftId = mongoose.Types.ObjectId(request.params.id)
+
+    await Draft.deleteOne({ "_id": draftId })
+	       .exec((err, docs) => {
+	          if (err) {
+		     response.json(err)
+		  } else {
+		    response.json("success")
+		  }
+	     })
+})
+
+
+module.exports = draftRouter

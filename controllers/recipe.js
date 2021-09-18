@@ -6,15 +6,11 @@ const gToken = require('./getToken')
 const upload = require("../services/ImageUpload")
 const singleUpload = upload.single("photo")
 
-//localhost:3002/api/recipe
-
-/* All Get Requests related to Recipes */
 
 recipeRouter.get('/all', async (request, response) => {
    let recipes = []
-   /// apply a filter if the object is not null.
-   /// you need to get a filter object here 
-	// and then you need to add exclude and include conditions.
+   // Apply a filter if the object is not null.
+   // Add exclude and include conditions.
 	
    let param = request.query
 
@@ -35,7 +31,6 @@ recipeRouter.get('/all', async (request, response) => {
       xMeals = (param.xmeals[0] === '') ? null : param.xmeals
       Cuisines = (param.cuisines[0] === '') ? null : param.cuisines
       xCuisines = (param.xcuisines[0] === '') ? null : param.xcuisines
-
   }
 
    console.log('Ings')
@@ -138,16 +133,16 @@ recipeRouter.get('/all', async (request, response) => {
     await Recipe.find({ $and: ArrayOfFilters }, null, { sort: { date: 'desc'}})
                 .exec((err, docs) => {
                    if (err) {
-		      console.log("Error")
-		      console.log(err)
-                      response.json(err)
+		                  console.log("Error")
+		                  console.log(err)
+                      response.status(500).json(err)
                     }
 
                 console.log('filtered recipes')
-	        console.log(docs)
-	        recipes=[...docs]
-	        console.log(recipes)
-                response.json(recipes)
+	              console.log(docs)
+	              recipes=[...docs]
+	              console.log(recipes)
+                response.status(200).json(recipes)
          }) 
    }
   
@@ -162,14 +157,14 @@ recipeRouter.get('/urecipes', async (request, response) => {
    
    await Recipe.find({ author: param.uname }, null, { sort: { date: 'desc'}})
                .exec((err, docs) => {
-		   if (err) {
-		     console.log(err)
-		     response.json(err)
-		   } else {
-		     recipes = [...docs]
-		     response.json(recipes)
-		   }
-		})
+		                if (err) {
+		                   console.log(err)
+		                   response.status(500).json(err)
+		                } else {
+		                   recipes = [...docs]
+		                   response.status(200).json(recipes)
+		                }
+		           })
 })
 
 recipeRouter.get('/followingrecipes', async (request, response) => {
@@ -188,17 +183,15 @@ recipeRouter.get('/followingrecipes', async (request, response) => {
   let following = user.following
 
   Recipe.find({ author: { $in: following } })
-	.exec((err, recipes) => {
-	   if (err) {
-	     response.json(err)
-	   } else {
-	     response.json(recipes)
-	   }
-	})
+	      .exec((err, recipes) => {
+	          if (err) {
+	              response.status(500).json(err)
+	          } else {
+	              response.status(200).json(recipes)
+	          }
+	      })
 })
 
-
-/* All Post Requests related to Recipes */
 
 recipeRouter.post('/', singleUpload, async (request, response) => {
     console.log("inside add router")
@@ -206,7 +199,6 @@ recipeRouter.post('/', singleUpload, async (request, response) => {
     console.log("body ")
     console.log(body)
     console.log("request.file.location")
-    //console.log(request.file.location)
     const token = gToken.getTokenFrom(request)    
     const decodedToken = jwt.verify(token, process.env.SECRET)
  
@@ -228,27 +220,24 @@ recipeRouter.post('/', singleUpload, async (request, response) => {
          course: body.course,
          author: user.username,
          photo: (request.file) ? request.file.location : '',
-         date: new Date(),
-         rating: 0
+         date: new Date()
      })
  
      recipe.save(function (err, recipe) {
        if (err) {
-         console.log(err)
-     response.json({'err': err.message})
+            console.log(err)
+            response.status(500).json({'err': err.message})
        } else {
-     user.recipes.push(recipe._id)
-         const savedUser = user.save()
-     console.log(user.recipes)
-     console.log(user)
-     response.json(recipe)
+            user.recipes.push(recipe._id)
+            const savedUser = user.save()
+            console.log(user.recipes)
+            console.log(user)
+            response.status(2001).json(recipe)
        }
      
      })
  })
  
-
-/* All Put requests related to recipes */
 
 recipeRouter.put('/', singleUpload, async (request, response) => {
 
@@ -267,25 +256,23 @@ recipeRouter.put('/', singleUpload, async (request, response) => {
     let conditions = { _id: body._id }
     let update = {
         title: body.title,
-	    ingredients: JSON.parse(body.ingredients),
-	    method: body.method,
-	    cuisine: body.cuisine,
-	    meal: body.meal,
-	    course: body.course,
-	    photo: (request.file) ? request.file.location : body.photo,
-	    date: new Date()
+	      ingredients: JSON.parse(body.ingredients),
+	      method: body.method,
+	      cuisine: body.cuisine,
+	      meal: body.meal,
+	      course: body.course,
+	      photo: (request.file) ? request.file.location : body.photo,
+	      date: new Date()
     }
 
     let options = { multi: true }
 
     Recipe.update(conditions, update, options, (err, doc) => {
-       if (err) return response.json(err)
+          if (err) return response.status(500).json(err)
 
-       response.json({ success: "updatedrecipe" })
+          response.status(200).json({ success: "updatedrecipe" })
     })
 })
-
-/* All Delete requests related to recipes */
 
 recipeRouter.delete('/:id', async (request, response) => {
     const token = gToken.getTokenFrom(request)
@@ -300,12 +287,12 @@ recipeRouter.delete('/:id', async (request, response) => {
 
     await Recipe.deleteOne({ "_id": recipeId })
 	        .exec((err, obj) => {
-		   if (err) {
-		     console.log(err)
-		     response.json(err)
-		   } else {
-		      response.json("success")
-		   }
+		      if (err) {
+		         console.log(err)
+		         response.status(400).json(err)
+		      } else {
+		         response.status(200).json("success")
+		      }
 		})
 })
 

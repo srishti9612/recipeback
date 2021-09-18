@@ -44,19 +44,10 @@ const recipeSchema = new mongoose.Schema({
      required: true
    },
 
-   rating: {
-     type: Number
-   },
-
    date: {
       type: Date,
       required: true
    },
-
-   /*author: {
-      type: Schema.Types.ObjectId,
-      ref: 'User'
-   },*/
 
    author: {
      type: String,

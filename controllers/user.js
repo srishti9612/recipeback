@@ -4,7 +4,6 @@ const User = require('../models/user')
 const jwt = require('jsonwebtoken')
 const gToken = require('./getToken')
 
-// localhost:3002/api/user
 
 userRouter.get('/followingauthors', async (request, response) => {
   
@@ -21,7 +20,7 @@ userRouter.get('/followingauthors', async (request, response) => {
   
     let followingNames = user.following
   
-    response.json(followingNames)
+    response.status(200).json(followingNames)
   
 })
 
@@ -32,13 +31,13 @@ userRouter.get('/info', async (request, response) => {
   let param = request.query
   
   await User.find({ username: param.uname }, { bio: 1, followers: 1 })
-      .exec((err, docs) => {
-         if (err) {
-     response.json(err)
-   } else {
-     response.json(docs)
-   }
-      })
+            .exec((err, docs) => {
+               if (err) {
+                   response.status(500).json(err)
+               } else {
+                   response.status(200).json(docs)
+               }
+            })
 })
     
 
@@ -68,7 +67,7 @@ userRouter.post('/', async (request, response) => {
 
    const savedUser = await user.save()
    
-   response.json(savedUser)
+   response.status(201).json(savedUser)
 })
 
 
@@ -94,9 +93,9 @@ userRouter.put('/intro', async (request, response) => {
   let options = { multi: true }
 
  await User.update(conditions, update, options, (err, doc) => {
-     if (err) return response.json(err)
+     if (err) return response.status(500).json(err)
 
-     response.json({ success: "updatedBio" })
+     response.status(200).json({ success: "updatedBio" })
   })
 
  
@@ -140,7 +139,7 @@ userRouter.post('/follow', async (request, response) => {
           }
       })
 
-      response.json(true)
+      response.status(200).json(true)
 })
 
 module.exports = userRouter

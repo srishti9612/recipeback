@@ -4,8 +4,6 @@ const Recipe = require('../models/recipe')
 const jwt = require('jsonwebtoken')
 const gToken = require('./getToken')
 
-// localhost:3002/api/bookmark
-
 bookmarkRouter.post('/', async (request, response) => {
     const body = request.body
     console.log(body)
@@ -25,12 +23,12 @@ bookmarkRouter.post('/', async (request, response) => {
        index = user.bookmarks.indexOf(bmid)
        user.bookmarks.splice(index, 1)
        user.save()
-       return response.json(null)
+       return response.status(200).json(null)
     }
 
     const savedUser = user.save()
     console.log(user.bookmarks)
-    response.json(user.bookmarks)
+    response.status(200).json(user.bookmarks)
 })
 
 
@@ -50,13 +48,13 @@ bookmarkRouter.get('/all', async (request, response) => {
     console.log(bookmarks)
  
     Recipe.find({ _id: { $in: [...bookmarks] } })
-      .exec((err, bookmarks) => {
+          .exec((err, bookmarks) => {
            
-          if (err) {
-              response.json(err)
-           }
+             if (err) {
+               response.status(500).json(err)
+             }
  
-           response.json(bookmarks)
+             response.status(200).json(bookmarks)
        })
 })
 

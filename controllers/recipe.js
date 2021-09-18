@@ -232,7 +232,7 @@ recipeRouter.post('/', singleUpload, async (request, response) => {
             const savedUser = user.save()
             console.log(user.recipes)
             console.log(user)
-            response.status(2001).json(recipe)
+            response.status(201).json(recipe)
        }
      
      })
